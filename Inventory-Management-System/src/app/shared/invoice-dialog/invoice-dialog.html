@@ -1,0 +1,142 @@
+<div class="p-6">
+  <h2 class="text-2xl font-bold mb-4 text-blue-700">🧾 Create Customer Invoice</h2>
+  
+  <form [formGroup]="invoiceForm" class="max-h-[80vh] overflow-y-auto pr-2">
+    
+    <!-- Customer Details -->
+    <div class="mb-6 border-l-4 border-blue-500 pl-4">
+      <h3 class="text-lg font-semibold mb-3">Customer Details</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Customer Name *</label>
+          <input type="text" formControlName="customerName" class="w-full border rounded-lg px-3 py-2" placeholder="Enter customer name">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Customer Phone</label>
+          <input type="text" formControlName="customerPhone" class="w-full border rounded-lg px-3 py-2" placeholder="Phone number">
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1">Customer Email</label>
+          <input type="email" formControlName="customerEmail" class="w-full border rounded-lg px-3 py-2" placeholder="Email address">
+        </div>
+      </div>
+    </div>
+
+    <!-- Invoice Items -->
+    <div class="mb-6">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-semibold">Invoice Items</h3>
+        <button type="button" (click)="addItem()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+          + Add Item
+        </button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full border rounded-lg">
+          <thead class="bg-blue-50">
+            <tr>
+              <th class="px-4 py-2 text-left">Product</th>
+              <th class="px-4 py-2 text-left w-32">Quantity</th>
+              <th class="px-4 py-2 text-left w-32">Price</th>
+              <th class="px-4 py-2 text-left w-32">Total</th>
+              <th class="px-4 py-2 text-center w-16">Action</th>
+            </tr>
+          </thead>
+          <tbody formArrayName="items">
+            <tr *ngFor="let item of items.controls; let i = index" [formGroupName]="i" class="border-t">
+              <td class="px-4 py-2">
+                <select formControlName="productId" (change)="onProductSelect(i)" class="w-full border rounded-lg px-2 py-1.5">
+                  <option value="">Select Product</option>
+                  <option *ngFor="let product of products" [value]="product.id">
+                    {{product.name}} (Stock: {{product.quantity}}) - {{product.price | currency}}
+                  </option>
+                </select>
+                <span *ngIf="stockErrors[i]" class="text-red-500 text-xs mt-1 block">⚠ {{stockErrors[i]}}</span>
+              </td>
+              <td class="px-4 py-2">
+                <input type="number" formControlName="quantity" (input)="updateItemTotal(i)" class="w-full border rounded-lg px-2 py-1.5" min="1" placeholder="Qty">
+              </td>
+              <td class="px-4 py-2">
+                <span class="text-sm">{{getItemPrice(i) | currency}}</span>
+              </td>
+              <td class="px-4 py-2">
+                <span class="font-semibold">{{getItemTotal(i) | currency}}</span>
+              </td>
+              <td class="px-4 py-2 text-center">
+                <button type="button" (click)="removeItem(i)" class="text-red-600 hover:text-red-800">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="items.length === 0" class="text-center text-gray-500 py-6 border-2 border-dashed rounded-lg mt-3">
+        No items added. Click "Add Item" to add products.
+      </div>
+    </div>
+
+    <!-- Payment Summary -->
+    <div class="mb-6 bg-blue-50 p-4 rounded-lg">
+      <h3 class="text-lg font-semibold mb-3">Payment Summary</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1">Tax (%)</label>
+            <input type="number" formControlName="tax" (input)="calculateTotal()" class="w-full border rounded-lg px-3 py-2" placeholder="0">
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1">Discount</label>
+            <input type="number" formControlName="discount" (input)="calculateTotal()" class="w-full border rounded-lg px-3 py-2" placeholder="0">
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1">Payment Method</label>
+            <select formControlName="paymentMethod" class="w-full border rounded-lg px-3 py-2">
+              <option value="cash">💵 Cash</option>
+              <option value="card">💳 Card</option>
+              <option value="upi">📱 UPI</option>
+              <option value="bank">🏦 Bank Transfer</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm font-medium mb-1">Payment Status</label>
+            <select formControlName="paymentStatus" class="w-full border rounded-lg px-3 py-2">
+              <option value="paid">✅ Paid</option>
+              <option value="pending">⏳ Pending</option>
+              <option value="partial">🔶 Partial</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-white p-4 rounded-lg">
+          <div class="flex justify-between py-2">
+            <span>Subtotal:</span>
+            <span class="font-semibold">{{getSubtotal() | currency}}</span>
+          </div>
+          <div class="flex justify-between py-2">
+            <span>Tax ({{invoiceForm.get('tax')?.value || 0}}%):</span>
+            <span>{{getTaxAmount() | currency}}</span>
+          </div>
+          <div class="flex justify-between py-2">
+            <span>Discount:</span>
+            <span class="text-red-600">-{{discountAmount() | currency}}</span>
+          </div>
+          <div class="border-t pt-2 flex justify-between font-bold">
+            <span>Total:</span>
+            <span class="text-xl text-blue-600">{{totalAmount() | currency}}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-3 pt-4 border-t">
+      <button type="button" (click)="onCancel()" class="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400">Cancel</button>
+      <button type="button" (click)="onSubmit()" [disabled]="invoiceForm.invalid || items.length === 0 || hasStockErrors()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed">
+        Create Invoice
+      </button>
+    </div>
+  </form>
+</div>

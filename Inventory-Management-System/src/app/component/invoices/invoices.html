@@ -1,0 +1,160 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Invoices (Customer Bills)</h2>
+    <button (click)="createInvoice()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Create Invoice
+    </button>
+  </div>
+  
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let invoice of invoices">
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{invoice.invoiceNumber}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{invoice.customerName}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{invoice.customerPhone || '-'}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{invoice.items.length || 0}} items</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{invoice.total | currency}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <span class="px-2 py-1 text-xs rounded-full" 
+                  [class.bg-green-100]="invoice.paymentMethod === 'cash'"
+                  [class.bg-blue-100]="invoice.paymentMethod === 'card'"
+                  [class.bg-purple-100]="invoice.paymentMethod === 'upi'"
+                  [class.bg-gray-100]="invoice.paymentMethod === 'bank'">
+              {{invoice.paymentMethod | titlecase}}
+            </span>
+           </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm">
+            <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                  [class.bg-green-100]="invoice.paymentStatus === 'paid'"
+                  [class.text-green-800]="invoice.paymentStatus === 'paid'"
+                  [class.bg-yellow-100]="invoice.paymentStatus === 'pending'"
+                  [class.text-yellow-800]="invoice.paymentStatus === 'pending'"
+                  [class.bg-orange-100]="invoice.paymentStatus === 'partial'"
+                  [class.text-orange-800]="invoice.paymentStatus === 'partial'">
+              {{invoice.paymentStatus | titlecase}}
+            </span>
+           </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{invoice.createdAt | date:'mediumDate'}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <div class="flex items-center gap-2">
+              <button (click)="printInvoice(invoice)" class="text-gray-600 hover:text-gray-800" title="Print Invoice">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+              </button>
+              <button (click)="exportToPDF(invoice)" class="text-red-600 hover:text-red-800" title="Download PDF">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11v6m-3-3h6" />
+                </svg>
+              </button>
+            </div>
+           </td>
+         </tr>
+        <tr *ngIf="invoices.length === 0">
+          <td colspan="9" class="px-6 py-4 text-center text-gray-500">No invoices found. Click "Create Invoice" to create one.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Invoice Print Preview Modal -->
+<div *ngIf="showPrintPreview()" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+  <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div class="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+      <h3 class="text-lg font-bold">Invoice Preview</h3>
+      <button (click)="closePreview()" class="text-gray-500 hover:text-gray-700">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="p-6">
+      <div id="invoice-print" class="bg-white">
+        <div class="p-8">
+          <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-blue-600">INVOICE</h1>
+            <p class="text-gray-500">Tax Invoice / Bill of Supply</p>
+          </div>
+          
+          <div class="mb-6">
+            <h2 class="text-xl font-bold">Inventory Manager</h2>
+            <p class="text-gray-600">123 Business Street, City, State - 123456</p>
+            <p class="text-gray-600">Email: support@inventory.com</p>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-4 mb-6 border-t border-b py-4">
+            <div>
+              <p><strong>Invoice No:</strong> {{selectedInvoice()?.invoiceNumber}}</p>
+              <p><strong>Date:</strong> {{selectedInvoice()?.createdAt | date:'mediumDate'}}</p>
+            </div>
+            <div>
+              <p><strong>Customer:</strong> {{selectedInvoice()?.customerName}}</p>
+              <p><strong>Phone:</strong> {{selectedInvoice()?.customerPhone || '-'}}</p>
+            </div>
+          </div>
+          
+          <table class="w-full border-collapse mb-6">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border p-2 text-left">#</th>
+                <th class="border p-2 text-left">Product</th>
+                <th class="border p-2 text-right">Qty</th>
+                <th class="border p-2 text-right">Price</th>
+                <th class="border p-2 text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of selectedInvoice()?.items; let i = index">
+                <td class="border p-2">{{i + 1}}</td>
+                <td class="border p-2">{{item.productName}}</td>
+                <td class="border p-2 text-right">{{item.quantity}}</td>
+                <td class="border p-2 text-right">{{item.price | currency}}</td>
+                <td class="border p-2 text-right">{{item.total | currency}}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="text-right w-64 ml-auto">
+            <div class="flex justify-between py-1"><span>Subtotal:</span><span>{{selectedInvoice()?.subtotal | currency}}</span></div>
+            <div class="flex justify-between py-1"><span>Tax ({{selectedInvoice()?.tax || 0}}%):</span><span>{{selectedInvoice()?.taxAmount | currency}}</span></div>
+            <div class="flex justify-between py-1"><span>Discount:</span><span>-{{selectedInvoice()?.discount | currency}}</span></div>
+            <div class="flex justify-between py-2 border-t font-bold"><span>Total:</span><span class="text-xl text-blue-600">{{selectedInvoice()?.total | currency}}</span></div>
+          </div>
+          
+          <div class="mt-6 border-t pt-4">
+            <p><strong>Payment Method:</strong> {{selectedInvoice()?.paymentMethod | titlecase}}</p>
+            <p class="text-sm text-gray-500 mt-4">Thank you for your business!</p>
+          </div>
+          
+          <div class="text-center text-sm text-gray-500 mt-8 pt-4 border-t">
+            <p>This is a computer generated invoice. No signature required.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sticky bottom-0 bg-gray-100 border-t p-4 flex justify-end gap-3">
+      <button (click)="closePreview()" class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">Close</button>
+      <button (click)="printInvoice(selectedInvoice())" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Print</button>
+      <button (click)="exportToPDF(selectedInvoice())" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">PDF</button>
+    </div>
+  </div>
+</div>

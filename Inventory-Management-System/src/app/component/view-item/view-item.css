@@ -1,0 +1,14 @@
+/* Custom styles for view-item */
+.prose {
+  line-height: 1.6;
+}
+
+/* Hover effects for buttons */
+button {
+  transition: all 0.2s ease;
+}
+
+/* Image thumbnail */
+img {
+  object-fit: cover;
+}

@@ -1,0 +1,154 @@
+<div class="bg-white rounded-lg shadow-md p-6">
+
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Purchase Orders</h2>
+    <button (click)="createOrder()" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Create Purchase Order
+    </button>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier Name</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivery Status</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr *ngFor="let order of orders()">
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{order.orderNumber}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{order.supplierName}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <span class="cursor-help" [title]="getItemsList(order.items)">
+              {{order.items?.length || 0}} items
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{order.totalAmount | currency}}</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                  [class.bg-yellow-100]="order.status === 'pending'"
+                  [class.text-yellow-800]="order.status === 'pending'"
+                  [class.bg-green-100]="order.status === 'delivered'"
+                  [class.text-green-800]="order.status === 'delivered'"
+                  [class.bg-red-100]="order.status === 'cancelled'"
+                  [class.text-red-800]="order.status === 'cancelled'">
+              <span *ngIf="order.status === 'pending'">⏳ Pending</span>
+              <span *ngIf="order.status === 'delivered'">✅ Delivered</span>
+              <span *ngIf="order.status === 'cancelled'">❌ Cancelled</span>
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{order.createdAt | date:'mediumDate'}}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <div class="flex items-center gap-2">
+
+              <!-- Mark as Delivered -->
+              <button *ngIf="order.status !== 'delivered'"
+                      (click)="openConfirm('delivered', order)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 transition"
+                      title="Mark as Delivered">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Delivered
+              </button>
+
+              <!-- Cancel Order -->
+              <button *ngIf="order.status === 'pending'"
+                      (click)="openConfirm('cancelled', order)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition"
+                      title="Cancel Order">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Failed
+              </button>
+
+              <!-- Reset to Pending -->
+              <button *ngIf="order.status !== 'pending'"
+                      (click)="openConfirm('pending', order)"
+                      class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition"
+                      title="Reset to Pending">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+              </button>
+
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="orders().length === 0">
+          <td colspan="7" class="px-6 py-4 text-center text-gray-500">No purchase orders found. Click "Create Purchase Order" to create one.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div *ngIf="confirmModal().visible"
+     class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+  <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+
+    <!-- Modal Header -->
+    <div class="px-6 py-4 border-b flex items-center gap-3"
+         [class.bg-green-50]="confirmModal().type === 'delivered'"
+         [class.bg-red-50]="confirmModal().type === 'cancelled'"
+         [class.bg-blue-50]="confirmModal().type === 'pending'">
+      <span class="text-2xl">
+        <span *ngIf="confirmModal().type === 'delivered'">✅</span>
+        <span *ngIf="confirmModal().type === 'cancelled'">❌</span>
+        <span *ngIf="confirmModal().type === 'pending'">🔄</span>
+      </span>
+      <h3 class="text-lg font-bold text-gray-800">{{getConfirmTitle()}}</h3>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="px-6 py-5">
+      <p class="text-gray-600 text-sm leading-relaxed">{{getConfirmMessage()}}</p>
+
+      <!-- Items preview -->
+      <div *ngIf="confirmModal().order?.items?.length > 0 && confirmModal().type === 'delivered'"
+           class="mt-4 bg-gray-50 rounded-lg p-3 text-xs text-gray-500 space-y-1 max-h-32 overflow-y-auto">
+        <p class="font-semibold text-gray-700 mb-1">Items that will be restocked:</p>
+        <div *ngFor="let item of confirmModal().order.items" class="flex justify-between">
+          <span>{{item.productName}}</span>
+          <span class="font-medium text-green-700">+{{item.quantity}} units</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal Actions -->
+    <div class="px-6 py-4 border-t bg-gray-50 flex justify-end gap-3">
+      <button (click)="cancelConfirm()"
+              class="px-4 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-700 hover:bg-gray-100 transition">
+        Cancel
+      </button>
+      <button (click)="confirmAction()"
+              class="px-4 py-2 rounded-lg text-sm font-medium transition"
+              [ngClass]="getConfirmButtonClass()">
+        {{getConfirmTitle()}}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div *ngIf="toast().visible"
+     class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium transition-all"
+     [class.bg-green-600]="toast().success"
+     [class.bg-red-600]="!toast().success">
+  <span>{{toast().success ? '✅' : '❌'}}</span>
+  <span>{{toast().message}}</span>
+</div>

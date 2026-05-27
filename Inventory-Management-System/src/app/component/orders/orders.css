@@ -1,0 +1,9 @@
+/* Custom styles for orders component */
+.cursor-help {
+  cursor: help;
+  border-bottom: 1px dotted #9ca3af;
+}
+
+button {
+  transition: all 0.2s ease;
+}

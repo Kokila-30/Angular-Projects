@@ -1,0 +1,9 @@
+/* Hover effect for table rows */
+tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+/* Transition for buttons */
+button, a {
+  transition: all 0.2s ease;
+}
