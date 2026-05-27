@@ -1,0 +1,480 @@
+<!-- Show Signup Form when no user exists -->
+<div *ngIf="!currentUser" class="signup-overlay">
+  <div class="signup-container">
+    <div class="signup-card">
+      <div class="signup-header">
+        <h1>Welcome to TaskFlow</h1>
+        <p>Create your account to start managing tasks</p>
+      </div>
+
+      <div class="signup-body">
+        <div class="input-group">
+          <label>Full Name *</label>
+          <input 
+            type="text" 
+            [(ngModel)]="signupName" 
+            placeholder="Enter your full name"
+            (input)="validateSignupName()"
+          />
+          <div *ngIf="signupNameError" class="error-text">{{ signupNameError }}</div>
+        </div>
+
+        <div class="input-group">
+          <label>Email Address *</label>
+          <input 
+            type="email" 
+            [(ngModel)]="signupEmail" 
+            placeholder="Enter your email"
+            (input)="validateSignupEmail()"
+          />
+          <div *ngIf="signupEmailError" class="error-text">{{ signupEmailError }}</div>
+        </div>
+
+        <div class="input-group">
+          <label>Profile Picture (optional)</label>
+          <input 
+            type="file" 
+            accept="image/*"
+            (change)="onSignupAvatarChange($event)"
+          />
+          <div *ngIf="signupAvatarPreview" class="avatar-preview">
+            <img [src]="signupAvatarPreview" alt="Preview" />
+          </div>
+        </div>
+
+        <button 
+          class="signup-btn" 
+          (click)="doSignup()" 
+          [disabled]="!isSignupFormValid()"
+        >
+          Start Managing Tasks →
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Show Board only when user exists -->
+<div *ngIf="currentUser" class="app-container">
+  <div class="main-title">
+    <h1>Task Management Board</h1>
+  </div>
+
+  <div class="top-section">
+    <div class="left-grid">
+      <div class="dashboard-card">
+        <div class="card-header">MY PROFILE</div>
+        <div class="card-body">
+          <div class="dashboard-content">
+            <div class="avatar-section">
+              <img *ngIf="currentUser.avatar" [src]="currentUser.avatar" class="avatar" />
+              <div *ngIf="!currentUser.avatar" class="avatar-fallback">
+                {{ currentUser.name.charAt(0).toUpperCase() }}
+              </div>
+              <div class="online-indicator"></div>
+            </div>
+            <div class="user-info">
+              <div class="user-name">{{ currentUser.name }}</div>
+              <div class="user-email">{{ currentUser.email }}</div>
+              <button class="logout-button" (click)="logout()">Sign Out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="card-header">TASK SUMMARY</div>
+        <div class="card-body">
+          <div class="summary-content">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-number">{{ totalCount }}</div>
+                <div class="stat-label">Total</div>
+              </div>
+              <div class="stat-item todo">
+                <div class="stat-number">{{ todoCount }}</div>
+                <div class="stat-label">To Do</div>
+              </div>
+              <div class="stat-item progress">
+                <div class="stat-number">{{ progressCount }}</div>
+                <div class="stat-label">In Progress</div>
+              </div>
+              <div class="stat-item done">
+                <div class="stat-number">{{ doneCount }}</div>
+                <div class="stat-label">Done</div>
+              </div>
+            </div>
+            <div class="progress-container">
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" [style.width.%]="completionPercent"></div>
+              </div>
+              <span class="progress-percent">{{ completionPercent }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-card">
+        <div class="card-header">SEARCH TASKS</div>
+        <div class="card-body">
+          <div class="search-wrapper">
+            <div class="search-input-group">
+              <input
+                type="text"
+                [(ngModel)]="searchInput"
+                placeholder="Search by title or description..."
+                (keyup.enter)="doSearch()"
+              />
+              <button (click)="doSearch()">Search</button>
+            </div>
+
+            <div *ngIf="activeSearch" class="search-results">
+              <div class="results-header">
+                <span>Results for "{{ activeSearch }}" ({{ searchResults.length }})</span>
+                <button class="clear-btn" (click)="clearSearch()">Clear</button>
+              </div>
+              <div class="results-list">
+                <div *ngIf="searchResults.length === 0" class="no-results">No tasks found</div>
+                <div
+                  *ngFor="let task of searchResults"
+                  class="result-item"
+                  (click)="openTaskModule(task.id)"
+                >
+                  <div class="result-title" [innerHTML]="highlight(task.title)"></div>
+                  <div class="result-meta">
+                    <span class="priority-badge" [class]="task.priority.toLowerCase()">{{ task.priority }}</span>
+                    <span class="status-badge" [class]="task.status">
+                      {{ task.status === 'todo' ? 'To Do' : task.status === 'inprogress' ? 'In Progress' : 'Done' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-grid">
+      <div class="create-task-card top-card">
+        <div class="card-header">CREATE NEW TASK</div>
+        <div class="card-body">
+          <div class="form-row">
+            <div class="input-field">
+              <label>Title *</label>
+              <input type="text" [(ngModel)]="newTitle" (input)="validateTitle()" placeholder="Enter task title" />
+              <div *ngIf="titleError" class="error">{{ titleError }}</div>
+            </div>
+            <div class="input-field">
+              <label>Priority</label>
+              <select [(ngModel)]="newPriority">
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-field">
+            <label>Description *</label>
+            <textarea [(ngModel)]="newDesc" (input)="validateDesc()" rows="2" placeholder="Enter task description"></textarea>
+            <div *ngIf="descError" class="error">{{ descError }}</div>
+          </div>
+
+          <div class="form-row">
+            <div class="input-field">
+              <label>Deadline</label>
+              <input type="datetime-local" [(ngModel)]="newDeadline" />
+            </div>
+            <div class="input-field">
+              <label>Images (max 5)</label>
+              <input #fileInput type="file" multiple accept="image/*" (change)="onFileChange($event)" />
+            </div>
+          </div>
+
+          <button class="create-btn" (click)="addTask()">+ Create Task</button>
+          <div *ngIf="dupWarning" class="warning">{{ dupWarning }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="board-columns">
+    <div class="column">
+      <div class="column-header">
+        <span><span class="dot todo-dot"></span> To Do</span>
+        <span class="badge">{{ filteredTasks('todo').length }}</span>
+      </div>
+      <div class="task-list" (dragover)="onDragOver($event)" (drop)="onDrop($event, 'todo')">
+        <div *ngFor="let task of filteredTasks('todo')" class="task-card" draggable="true" (dragstart)="onDragStart(task.id)">
+          <ng-container *ngTemplateOutlet="taskCardTpl; context: { task: task }"></ng-container>
+        </div>
+        <div *ngIf="filteredTasks('todo').length === 0" class="empty">No tasks</div>
+      </div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span><span class="dot progress-dot"></span> In Progress</span>
+        <span class="badge">{{ filteredTasks('inprogress').length }}</span>
+      </div>
+      <div class="task-list" (dragover)="onDragOver($event)" (drop)="onDrop($event, 'inprogress')">
+        <div *ngFor="let task of filteredTasks('inprogress')" class="task-card" draggable="true" (dragstart)="onDragStart(task.id)">
+          <ng-container *ngTemplateOutlet="taskCardTpl; context: { task: task }"></ng-container>
+        </div>
+        <div *ngIf="filteredTasks('inprogress').length === 0" class="empty">No tasks</div>
+      </div>
+    </div>
+
+    <div class="column">
+      <div class="column-header">
+        <span><span class="dot done-dot"></span> Done</span>
+        <span class="badge">{{ filteredTasks('done').length }}</span>
+      </div>
+      <div class="task-list" (dragover)="onDragOver($event)" (drop)="onDrop($event, 'done')">
+        <div *ngFor="let task of filteredTasks('done')" class="task-card" draggable="true" (dragstart)="onDragStart(task.id)">
+          <ng-container *ngTemplateOutlet="taskCardTpl; context: { task: task }"></ng-container>
+        </div>
+        <div *ngIf="filteredTasks('done').length === 0" class="empty">No tasks</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="controls-row">
+    <div class="control-card">
+      <div class="card-header">FILTER BY STATUS</div>
+      <div class="card-body">
+        <div class="filter-buttons">
+          <button [class.active]="activeStatus === 'all'" (click)="setFilter('status', 'all')">All</button>
+          <button [class.active]="activeStatus === 'todo'" (click)="setFilter('status', 'todo')">To Do</button>
+          <button [class.active]="activeStatus === 'inprogress'" (click)="setFilter('status', 'inprogress')">In Progress</button>
+          <button [class.active]="activeStatus === 'done'" (click)="setFilter('status', 'done')">Done</button>
+        </div>
+        <button class="clear-filter" (click)="clearFilter('status')">Clear Filter</button>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <div class="card-header">FILTER BY PRIORITY</div>
+      <div class="card-body">
+        <div class="filter-buttons">
+          <button [class.active]="activePriority === 'all'" (click)="setFilter('priority', 'all')">All</button>
+          <button [class.active]="activePriority === 'High'" (click)="setFilter('priority', 'High')">High</button>
+          <button [class.active]="activePriority === 'Medium'" (click)="setFilter('priority', 'Medium')">Medium</button>
+          <button [class.active]="activePriority === 'Low'" (click)="setFilter('priority', 'Low')">Low</button>
+        </div>
+        <button class="clear-filter" (click)="clearFilter('priority')">Clear Filter</button>
+      </div>
+    </div>
+
+    <div class="control-card">
+      <div class="card-header">SORT TASKS</div>
+      <div class="card-body">
+        <select [(ngModel)]="sortSelectValue" class="sort-select">
+          <option value="none">No Sorting</option>
+          <option value="created">By Date Created</option>
+          <option value="title">By Title (A-Z)</option>
+          <option value="priority">By Priority</option>
+        </select>
+        <div class="sort-actions">
+          <button class="apply-sort" (click)="applySort()">Apply Sort</button>
+          <button *ngIf="activeSort !== 'none'" class="clear-sort" (click)="clearSort()">Clear</button>
+        </div>
+
+        <div *ngIf="activeSort !== 'none'" class="sort-results">
+          <div class="sort-results-label">
+            Sorted by <strong>{{ activeSortLabel }}</strong> — {{ sortedPreview.length }} tasks
+          </div>
+          <div class="sort-results-list">
+            <div
+              *ngFor="let task of sortedPreview; let i = index"
+              class="sort-result-item"
+              (click)="openTaskModule(task.id)"
+            >
+              <span class="sort-rank">#{{ i + 1 }}</span>
+              <div class="sort-item-info">
+                <div class="sort-item-title">{{ task.title }}</div>
+                <div class="sort-item-meta">
+                  <span class="priority-badge" [class]="task.priority.toLowerCase()">{{ task.priority }}</span>
+                  <span class="status-badge" [class]="task.status">
+                    {{ task.status === 'todo' ? 'To Do' : task.status === 'inprogress' ? 'In Progress' : 'Done' }}
+                  </span>
+                </div>
+              </div>
+              <span class="sort-arrow">›</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODULE -->
+<div class="module-overlay" *ngIf="showTaskModule" (click)="closeTaskModule()">
+  <div class="module-card" (click)="$event.stopPropagation()" *ngIf="moduleTask">
+    <div class="module-header">
+      <div class="module-header-left">
+        <span class="priority-tag" [class]="moduleTask.priority.toLowerCase()">{{ moduleTask.priority }}</span>
+        <span class="module-status-badge" [class]="moduleTask.status">
+          {{ moduleTask.status === 'todo' ? 'To Do' : moduleTask.status === 'inprogress' ? 'In Progress' : 'Done' }}
+        </span>
+      </div>
+      <button class="module-close" (click)="closeTaskModule()">✕</button>
+    </div>
+
+    <h2 class="module-title">{{ moduleTask.title }}</h2>
+    <p class="module-desc">{{ moduleTask.description }}</p>
+
+    <div class="module-dates-row">
+      <div class="module-date-chip">
+        <span class="date-icon">🕐</span>
+        <div>
+          <div class="date-label">Created</div>
+          <div class="date-value">{{ formatDate(moduleTask.createdTime, '') }}</div>
+        </div>
+      </div>
+      <div class="module-date-chip" [class.chip-expired]="isExpired(moduleTask)">
+        <span class="date-icon">📅</span>
+        <div>
+          <div class="date-label">Deadline</div>
+          <div class="date-value">
+            {{ formatDate(moduleTask.deadline) }}
+            <span *ngIf="isExpired(moduleTask)" class="expired-tag">EXPIRED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="moduleTask.attachments && moduleTask.attachments.length">
+      <div class="module-section-label">Images ({{ moduleTask.attachments.length }}/5)</div>
+      <div class="module-images">
+        <img
+          *ngFor="let img of moduleTask.attachments; let i = index"
+          [src]="img"
+          class="module-thumb"
+          (click)="closeTaskModule(); openLightbox(moduleTask.id, i)"
+          alt="attachment"
+        />
+      </div>
+    </ng-container>
+
+    <div class="module-actions">
+      <button class="module-edit-btn" (click)="openEditModal(moduleTask.id)">✏️ Edit Task</button>
+      <button class="module-delete-btn" (click)="openDeleteModal(moduleTask.id)">🗑 Delete</button>
+    </div>
+
+    <div class="module-section-label" style="margin-top:1rem">Move To</div>
+    <div class="module-move-row">
+      <button *ngIf="moduleTask.status !== 'todo'" class="move-chip todo-chip" (click)="moveTask(moduleTask.id, 'todo')">⬅ To Do</button>
+      <button *ngIf="moduleTask.status !== 'inprogress'" class="move-chip progress-chip" (click)="moveTask(moduleTask.id, 'inprogress')">🔄 In Progress</button>
+      <button *ngIf="moduleTask.status !== 'done'" class="move-chip done-chip" (click)="moveTask(moduleTask.id, 'done')">✅ Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeEditModal()">
+  <div class="edit-modal-card" (click)="$event.stopPropagation()">
+    <div class="edit-modal-header">
+      <h3>✏️ Edit Task</h3>
+      <button class="edit-close-btn" (click)="closeEditModal()">✕</button>
+    </div>
+    <div class="edit-modal-body">
+      <div class="edit-field">
+        <label>Task Title</label>
+        <input type="text" [(ngModel)]="editTitle" placeholder="Enter title" />
+      </div>
+      <div class="edit-field">
+        <label>Description</label>
+        <textarea [(ngModel)]="editDesc" rows="3" placeholder="Task details..."></textarea>
+      </div>
+      <div class="edit-two-col">
+        <div class="edit-field">
+          <label>Priority</label>
+          <select [(ngModel)]="editPriority">
+            <option>Low</option>
+            <option>Medium</option>
+            <option>High</option>
+          </select>
+        </div>
+        <div class="edit-field">
+          <label>Deadline</label>
+          <input type="datetime-local" [(ngModel)]="editDeadline" />
+        </div>
+      </div>
+      <div class="edit-field">
+        <label>Add Images (optional)</label>
+        <input #editFileInput type="file" multiple accept="image/jpeg,image/png,image/webp" (change)="onEditFileChange($event)" />
+        <small>Max 5 images total</small>
+      </div>
+      <div *ngIf="editCurrentImages.length" class="edit-images-area">
+        <label>Current Images ({{ editCurrentImages.length }}/5)</label>
+        <div class="edit-images-row">
+          <div *ngFor="let img of editCurrentImages; let i = index" class="edit-img-wrap">
+            <img [src]="img" class="edit-thumb" alt="img" />
+            <button class="edit-img-remove" (click)="removeEditImage(i)">✕</button>
+          </div>
+        </div>
+        <div *ngIf="editCurrentImages.length >= 5" class="warning-text">
+          Maximum 5 images reached. Remove some to add more.
+        </div>
+      </div>
+    </div>
+    <div class="edit-modal-footer">
+      <button class="edit-cancel-btn" (click)="closeEditModal()">Cancel</button>
+      <button class="edit-save-btn" (click)="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
+  <div class="modal-content delete" (click)="$event.stopPropagation()">
+    <h3>Delete Task</h3>
+    <p>Are you sure you want to delete this task?</p>
+    <div class="modal-buttons">
+      <button class="cancel" (click)="cancelDelete()">Cancel</button>
+      <button class="confirm" (click)="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox-overlay" *ngIf="showLightbox" (click)="closeLightbox()">
+  <div class="lightbox-content" (click)="$event.stopPropagation()">
+    <button class="close" (click)="closeLightbox()">✕</button>
+    <button class="delete" (click)="deleteLightboxImage()">Delete</button>
+    <button class="nav prev" *ngIf="lightIndex > 0" (click)="lightboxNav(-1)">◀</button>
+    <img [src]="lightboxImages[lightIndex]" class="lightbox-image" />
+    <button class="nav next" *ngIf="lightIndex < lightboxImages.length - 1" (click)="lightboxNav(1)">▶</button>
+    <div class="counter">{{ lightIndex + 1 }} / {{ lightboxImages.length }}</div>
+  </div>
+</div>
+
+<!-- TASK CARD TEMPLATE -->
+<ng-template #taskCardTpl let-task="task">
+  <div class="task-title" [innerHTML]="highlight(task.title)"></div>
+  <div class="task-desc">
+    {{ task.description.length > 80 ? task.description.substring(0, 80) + '...' : task.description }}
+  </div>
+  <div class="task-meta">
+    <span class="priority-tag" [class]="task.priority.toLowerCase()">{{ task.priority }}</span>
+    <span class="deadline" [class.expired]="isExpired(task)">
+      📅 {{ formatDate(task.deadline) }}
+      <span *ngIf="isExpired(task)" class="expired-inline">EXPIRED</span>
+    </span>
+  </div>
+  <div class="task-images" *ngIf="task.attachments && task.attachments.length">
+    <img *ngFor="let img of task.attachments; let i = index" 
+         [src]="img" 
+         class="task-thumb" 
+         (click)="openLightbox(task.id, i)"
+         title="Click to view full size" />
+  </div>
+  <div class="task-actions">
+    <button class="edit" (click)="openEditModal(task.id)">✏️ Edit</button>
+    <button class="delete" (click)="openDeleteModal(task.id)">🗑 Delete</button>
+    <button class="view" (click)="openTaskModule(task.id)">👁 View</button>
+  </div>
+</ng-template>

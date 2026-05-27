@@ -1,0 +1,51 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <div class="auth-header">
+      <h1>Create Account</h1>
+      <p>Sign up to start managing your tasks</p>
+    </div>
+    <div class="auth-body">
+      <div class="input-group">
+        <label>Full Name *</label>
+        <input 
+          type="text" 
+          [(ngModel)]="name" 
+          (input)="validateName()"
+          placeholder="Enter your full name"
+        />
+        <div *ngIf="nameError" class="error-msg">{{ nameError }}</div>
+      </div>
+
+      <div class="input-group">
+        <label>Email Address *</label>
+        <input 
+          type="email" 
+          [(ngModel)]="email" 
+          (input)="validateEmail()"
+          placeholder="Enter your email"
+        />
+        <div *ngIf="emailError" class="error-msg">{{ emailError }}</div>
+      </div>
+
+      <div class="input-group">
+        <label>Profile Picture (optional)</label>
+        <input 
+          type="file" 
+          accept="image/*"
+          (change)="onAvatarChange($event)"
+        />
+        <div *ngIf="avatarPreview" class="avatar-preview">
+          <img [src]="avatarPreview" alt="Preview" />
+        </div>
+      </div>
+
+      <button 
+        class="auth-btn" 
+        (click)="signUp()" 
+        [disabled]="!isFormValid()"
+      >
+        Sign Up
+      </button>
+    </div>
+  </div>
+</div>
